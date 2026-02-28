@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arkanoid</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      #gameCanvas {
+        display: block;
+        max-width: 100vw;
+        max-height: 100vh;
+        image-rendering: pixelated;
+      }
+
+      #overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #fff;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      #overlay h1 {
+        font-size: 3rem;
+        letter-spacing: 0.2em;
+        text-shadow: 0 0 20px #f90;
+        margin-bottom: 1rem;
+      }
+
+      #overlay p {
+        font-size: 1.1rem;
+        color: #ccc;
+        animation: blink 1.2s step-end infinite;
+      }
+
+      @keyframes blink {
+        50% { opacity: 0; }
+      }
+
+      #overlay.hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="overlay">
+      <h1>ARKANOID</h1>
+      <p>Press SPACE or tap to start</p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
