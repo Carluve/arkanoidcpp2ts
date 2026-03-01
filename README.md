@@ -1,50 +1,90 @@
-# Arkanoid C++ → TypeScript (Cloudflare Workers)
+# Arkanoid C++ → TypeScript (Cloudflare Pages)
 
-> Proyecto de migración de un juego clásico Arkanoid escrito en C++ con SFML hacia TypeScript, desplegado en **Cloudflare Workers** mediante **Vibe Coding**.
+> Migración completa de un juego clásico Arkanoid escrito en C++ con SFML hacia TypeScript + HTML5 Canvas, desplegado en **Cloudflare Pages** mediante **Vibe Coding**.
+
+![Arkanoid desplegado en Cloudflare Pages](prompt/05-arkanoid-cloudflare-deploy.png)
+
+**Jugar ahora:** [cbcb0820.arkanoid-5s6.pages.dev](https://cbcb0820.arkanoid-5s6.pages.dev)
 
 ---
 
-## Descripción del proyecto original
+## Descripción
 
-Este repositorio contiene la implementación de un juego **Arkanoid** (estilo Breakout) escrito en **C++** utilizando la librería gráfica [SFML](https://www.sfml-dev.org/).
+Este repositorio contiene dos versiones del juego **Arkanoid** (estilo Breakout):
 
-### Características actuales (C++)
+1. **Versión original en C++** — Usa la librería gráfica [SFML](https://www.sfml-dev.org/) para renderizado de escritorio.
+2. **Versión web en TypeScript** — Usa HTML5 Canvas, Vite y se despliega en Cloudflare Pages.
 
-- Ventana de juego de 520 × 450 píxeles
-- 100 bloques distribuidos en una cuadrícula 10 × 10
-- Pelota con movimiento autónomo y rebote en paredes y bloques
-- Paleta controlada con las teclas ← → del teclado
-- Velocidad de la pelota aleatoria al rebotar contra la paleta
-- Assets en PNG/JPG: fondo, pelota, paleta y bloques
-- Limitado a 60 FPS via SFML
+La migración fue realizada en una sola sesión de **Vibe Coding** usando [OpenCode](https://opencode.ai) + Claude Opus vía Cloudflare AI Gateway.
 
-### Estructura del proyecto
+---
+
+## Estructura del proyecto
 
 ```
 arkanoidcpp2ts/
-├── main.cpp          # Código fuente C++ (SFML)
-├── images/
+├── main.cpp              # Código fuente C++ original (SFML)
+├── images/               # Assets originales del juego
 │   ├── background.jpg
 │   ├── ball.png
-│   ├── block01.png
-│   ├── block02.png
-│   ├── block03.png
-│   ├── block04.png
-│   ├── block05.png
-│   └── paddle.png
+│   ├── block01.png … block05.png
+��   └── paddle.png
+├── prompt/               # Prompt de migración y capturas del proceso
+│   ├��─ prompt-migracion.md
+│   └── *.png
+├── web/                  # Proyecto TypeScript (Vite)
+│   ├── src/
+│   │   ├── main.ts       # Bootstrap (equivale a main() en C++)
+│   │   ├── game.ts       # Game loop, update, render, HUD
+│   │   ├── ball.ts       # Entidad Ball (posición, velocidad, hitboxes)
+│   │   ├── paddle.ts     # Entidad Paddle (movimiento, bounds)
+│   │   ├── brick.ts      # Grid de bloques 10×10
+│   │   ├── collision.ts  # AABB intersection (FloatRect::intersects)
+│   │   ├── input.ts      # InputManager (reemplaza SFML Keyboard)
+│   │   ├── assets.ts     # Carga async de imágenes (reemplaza SFML Texture)
+│   │   └── types.ts      # Interfaces, CONFIG, GamePhase
+│   ├── public/images/    # Assets copiados para el build web
+│   ├── index.html
+│   ├── package.json
+│   ├── tsconfig.json     # TypeScript strict: true
+│   └── wrangler.toml     # Configuración Cloudflare Pages
+├── LICENSE
 └── README.md
 ```
 
 ---
 
-## Dependencias (versión C++)
+## Características del juego
 
-| Dependencia | Versión recomendada |
-|-------------|---------------------|
-| C++ compiler (g++ / clang++) | C++17 o superior |
-| [SFML](https://www.sfml-dev.org/) | 2.5+ |
+- Ventana de juego de 520 x 450 px (responsiva, preserva aspect ratio)
+- 100 bloques distribuidos en una cuadricula 10 x 10 con 5 texturas de colores
+- Pelota con movimiento y rebote en paredes y bloques (split-axis AABB)
+- Paleta controlada con las teclas izquierda/derecha del teclado
+- Velocidad de la pelota aleatoria al rebotar contra la paleta
+- HUD con puntuacion y vidas
+- Pantallas de titulo, Game Over y victoria
+- Delta-time normalizado: la fisica corre igual a cualquier refresh rate
 
-### Compilar y ejecutar
+---
+
+## Mapeo C++ → TypeScript
+
+| Concepto C++ (SFML) | Equivalente TypeScript (Web) |
+|---|---|
+| `RenderWindow` + `setFramerateLimit(60)` | `<canvas>` + `requestAnimationFrame` + delta-time |
+| `while (app.isOpen())` | `Game.loop()` con rAF recursivo |
+| `Texture::loadFromFile()` | `loadAssets()` — `Promise<HTMLImageElement>` |
+| `Sprite` + `setPosition` / `draw` | `ctx.drawImage()` en Canvas 2D |
+| `FloatRect::intersects()` | `aabbIntersects()` — AABB pura |
+| `Keyboard::isKeyPressed()` | `InputManager` con `Set<string>` via `keydown`/`keyup` |
+| `srand(time(0))` + `rand()%5+2` | `Math.random()` + `Math.floor()` |
+| `Sprite block[1000]` | `BrickData[]` con flag `alive` |
+
+---
+
+## Ejecucion local
+
+### Version C++ (original)
 
 ```bash
 # Instalar SFML en macOS (Homebrew)
@@ -57,64 +97,66 @@ g++ main.cpp -o arkanoid -lsfml-graphics -lsfml-window -lsfml-system
 ./arkanoid
 ```
 
+### Version TypeScript (web)
+
+```bash
+cd web
+npm install
+npm run dev        # Servidor local Vite → http://localhost:5173
+npm run build      # Build de produccion → web/dist/
+```
+
 ---
 
-## Hoja de ruta: Migración a TypeScript + Cloudflare Workers
+## Despliegue en Cloudflare Pages
 
-Este proyecto servirá como base para una migración completa usando **Vibe Coding** — un proceso de desarrollo asistido por IA donde el código se genera, refactoriza y valida de forma conversacional con un agente de IA.
+### Opcion 1: Wrangler CLI
 
-### Objetivo
+```bash
+cd web
+npm run deploy     # build + wrangler pages deploy
+```
 
-Reimplementar el juego Arkanoid íntegramente en **TypeScript**, eliminando la dependencia de SFML y el entorno de escritorio, para desplegarlo como una aplicación web ejecutándose en **Cloudflare Workers** con renderizado en el cliente mediante la API Canvas de HTML5.
+### Opcion 2: Git integration (CI/CD)
 
-### Plan de migración
+1. Conectar el repositorio en **Cloudflare Dashboard → Pages → Connect to Git**
+2. **Build command:** `cd web && npm install && npm run build`
+3. **Build output directory:** `web/dist`
 
-| Fase | Descripción | Estado |
+---
+
+## Proceso de migracion (Vibe Coding)
+
+La migracion fue ejecutada de forma autonoma por un agente de IA en una sola sesion. El prompt completo y las capturas del proceso estan documentados en [`prompt/prompt-migracion.md`](prompt/prompt-migracion.md).
+
+| Fase | Descripcion | Estado |
 |------|-------------|--------|
-| 1 | Análisis y documentación del código C++ original | ✅ |
-| 2 | Diseño de la arquitectura TypeScript (Worker + cliente) | 🔲 |
-| 3 | Migración de la lógica de juego a TypeScript | 🔲 |
-| 4 | Implementación del renderizado con Canvas API | 🔲 |
-| 5 | Despliegue en Cloudflare Workers con Wrangler | 🔲 |
-| 6 | Pruebas y optimización | 🔲 |
+| 1 | Analisis y documentacion del codigo C++ original | Completado |
+| 2 | Scaffold del proyecto Vite + TypeScript | Completado |
+| 3 | Migracion de la logica de juego a TypeScript | Completado |
+| 4 | Implementacion del renderizado con Canvas API | Completado |
+| 5 | Despliegue en Cloudflare Pages con Wrangler | Completado |
 
-### Stack tecnológico objetivo
+### Stack tecnologico
 
-- **Lenguaje:** TypeScript
-- **Runtime:** [Cloudflare Workers](https://workers.cloudflare.com/)
-- **Rendering:** HTML5 Canvas API
-- **Deploy:** [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/)
-- **Metodología:** Vibe Coding (desarrollo asistido por IA)
+- **Lenguaje:** TypeScript (strict mode)
+- **Build:** [Vite](https://vite.dev/)
+- **Rendering:** HTML5 Canvas 2D API
+- **Deploy:** [Cloudflare Pages](https://pages.cloudflare.com/) + [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/)
+- **Metodologia:** Vibe Coding con [OpenCode](https://opencode.ai) + Claude Opus via Cloudflare AI Gateway
 
 ---
 
-## Créditos
+## Creditos
 
-El código C++ original está basado en el trabajo de:
+El codigo C++ original esta basado en el trabajo de:
 
-- [**Kttra/RetroGamesCplus**](https://github.com/Kttra/RetroGamesCplus) — Colección de juegos retro implementados en C++ con SFML.
+- [**Kttra/RetroGamesCplus**](https://github.com/Kttra/RetroGamesCplus) — Coleccion de juegos retro implementados en C++ con SFML.
 
 ---
 
 ## Licencia
 
-Este proyecto está licenciado bajo los términos de la **GNU General Public License v3.0**.
+Este proyecto esta licenciado bajo los terminos de la **GNU General Public License v3.0**.
 
-```
-Copyright (C) 2026
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-```
-
-Ver el archivo [LICENSE](LICENSE) para más detalles.
+Ver el archivo [LICENSE](LICENSE) para mas detalles.
